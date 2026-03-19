@@ -339,16 +339,14 @@ This repo includes a full Claude Code agent + skill for hands-free operation. Th
 User: "Compare prices for example.com against all HU competitors"
   │
   ├── Skill activates (price-scraper skill)
-  │     ├── Step 1: Vault check for cached results
-  │     ├── Step 2: Gather params (webshop URL, sheet ID, country)
-  │     └── Step 3: Dispatch price-scraper agent
+  │     ├── Step 1: Gather params (webshop URL, sheet ID, country)
+  │     └── Step 2: Dispatch price-scraper agent
   │
   └── Agent executes (price-scraper agent)
         ├── Dry run first (--dry-run --limit 10)
         ├── Full pipeline (--workers 5, scale to 10)
         ├── Read output/products.json → write to Google Sheet via MCP
-        ├── Report summary to user
-        └── Dispatch vault-scribe with run metadata
+        └── Report summary to user
 ```
 
 ### Using with Claude Code

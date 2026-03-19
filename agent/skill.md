@@ -10,51 +10,48 @@ description: >
 
 # Price Scraper Skill
 
-Orchestrates the full price intelligence pipeline: webshop discovery → EAN-based cross-store search → Google Sheet results.
+Orchestrates the full price intelligence pipeline: webshop discovery → EAN-based cross-store search → structured JSON output (for Google Sheet import).
 
 ## Architecture
 
 ```
 price-scraper (this skill)
   → price-scraper agent (executor subagent)
-    → tools/price-scraper/price_scraper.py (CLI pipeline)
+    → price_scraper.py (CLI pipeline)
       ├── scrapers/client_webshop.py  (JSON-LD product discovery)
-      ├── scrapers/aggregator.py      (ár.hu, Google Shopping, idealo)
-      └── scrapers/direct.py         (Firecrawl fallback)
-    → pipeline/job_queue.py          (SQLite state, crash recovery)
-    → pipeline/sheet_sync.py         (Google Workspace MCP)
-    → agent-browser                  (Playwright fallback)
+      ├── scrapers/aggregator.py      (arukereso.hu, Google Shopping, idealo)
+      └── scrapers/direct.py          (direct competitor fallback)
+    → pipeline/job_queue.py           (SQLite state, crash recovery)
+    → pipeline/sheet_sync.py          (JSON output)
+    → agent-browser                   (Playwright fallback for Google Shopping)
 ```
 
-## Workflow (7 Steps)
+## Workflow (5 Steps)
 
-### Step 1 — Vault check
-Grep `~/Documents/SecondBrain/Agent-Brain/Memory/Research/` for previous price scrapes of this domain. If found and fresh (<24h), offer to use cached results.
-
-### Step 2 — Gather required params
+### Step 1 — Gather required params
 Collect before dispatching agent:
 - `webshop_url` — client webshop URL (optional; skip if sheet already has EANs)
 - `sheet_id` — Google Sheet ID for input/output
 - `country` — 2-letter code: HU, DE, AT, GB, FR, PL (default: HU)
 
-### Step 3 — Dry run (always first)
+### Step 2 — Dry run (always first)
 Dispatch price-scraper agent with `--dry-run --limit 10`:
 - Verify products are discoverable via JSON-LD
 - Confirm product count is realistic
 - Check no config issues before full run
 
-### Step 4 — Run full pipeline
+### Step 3 — Run full pipeline
 Dispatch price-scraper agent without `--dry-run`.
 - Start: `--workers 5` (conservative, less ban risk)
 - Scale: `--workers 10` after first 50 products complete cleanly
 
-### Step 5 — Monitor and handle failures
+### Step 4 — Monitor and handle failures
 If agent reports >20% failed/blocked jobs:
 - Reduce to `--workers 3`
 - Increase `rate_limit_seconds` in `config/sites.json`
 - Check if a specific aggregator is blocking
 
-### Step 6 — Present results to user
+### Step 5 — Present results to user
 
 Report format:
 ```
@@ -63,11 +60,8 @@ Price scrape complete:
 - Coverage: X% (found on at least 1 competitor)
 - Cheapest competitor overall: [store name]
 - Average delta: +X% (client overpriced by X% on average)
-- Sheet: [Google Sheet link]
+- Output: output/products.json, output/all_prices.json
 ```
-
-### Step 7 — Vault
-Dispatch vault-scribe with run metadata.
 
 ---
 
@@ -75,7 +69,7 @@ Dispatch vault-scribe with run metadata.
 
 | Country | Primary Aggregator | Notes |
 |---------|-------------------|-------|
-| HU | ár.hu | Indexes 400+ Hungarian webshops. Best HU coverage. |
+| HU | arukereso.hu | Indexes 400+ Hungarian webshops. Best HU coverage. |
 | DE | idealo.de | Germany's largest price comparison. |
 | AT | idealo.at | Austria |
 | FR | idealo.fr | France |
@@ -83,29 +77,28 @@ Dispatch vault-scribe with run metadata.
 | GB | Google Shopping only | agent-browser required |
 | Other | Google Shopping only | agent-browser required |
 
-## Google Sheet Output Structure
+## Output Structure
 
-**Products tab** (one row per product):
-`EAN | Product Name | Client Price | Client Currency | Client URL | Cheapest Price | Cheapest Store | Delta % | # Stores Found | Last Scraped`
+**output/products.json** (one entry per product):
+`ean | product_name | client_price | client_currency | client_url | cheapest_price | cheapest_store | delta_percent | stores_count | last_scraped`
 
-**All Prices tab** (one row per product × competitor):
-`EAN | Product Name | Store Name | Store URL | Product Page URL | Price | Currency | Scraped At`
+**output/all_prices.json** (one entry per product × competitor):
+`ean | product_name | store_name | store_url | product_url | price | currency | scraped_at`
 
 **Delta % sign convention:** positive = client overpriced (problem). Negative = client cheaper (opportunity). "—" for cross-currency.
 
 ## Constraints
 
-- Firecrawl free tier: 500 pages/month — use sparingly, aggregators handle 90%+
-- Google Sheets API: batch writes every 50 completions
-- Google Shopping: requires agent-browser; skipped gracefully if unavailable
+- Google Shopping: requires agent-browser (Playwright); skipped gracefully if unavailable
 - EAN coverage: ~80% of physical products have EANs; rest shows no results
-- Currency: no FX conversion in v1 — cross-currency shows "—"
+- Currency: no FX conversion — cross-currency shows "—"
 - Resume: every run is resumable by default (no special flag needed)
+- Rate limiting: per-domain delays configurable in `config/sites.json`
 
 ## First-Time Setup
 
 ```bash
-pip install -r tools/price-scraper/requirements.txt
+pip install -r requirements.txt
 ```
 
-Config file: `tools/price-scraper/config/sites.json` — add new countries or competitors here.
+Config file: `config/sites.json` — add new countries or competitors here.

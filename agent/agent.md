@@ -20,64 +20,53 @@ You are a price intelligence colleague. You discover products from client websho
 
 ## Tools
 
-- **Price scraper CLI:** `python3 tools/price-scraper/price_scraper.py [options]`
-- **Google Sheets:** Google Workspace MCP for reading/writing results
+- **Price scraper CLI:** `python3 price_scraper.py [options]`
+- **Google Sheets:** Google Workspace MCP for reading/writing results (reads output/ JSON files)
 - **agent-browser:** For Playwright-based scraping when HTTP is blocked
 
 ## Workflow
 
-1. **Vault check.** Grep `~/Documents/SecondBrain/Agent-Brain/Memory/Research/` for previous scrapes of this webshop.
-2. **Confirm params.** Verify: webshop URL (optional), sheet ID, country code.
-3. **Discovery (if --webshop provided).** Run with `--dry-run --limit 10` first. Confirm product count is reasonable before full run.
-4. **Run pipeline.** Start with `--workers 5` for first run to check ban risk. Scale to `--workers 10` if no blocked jobs after first 50 products.
-5. **Monitor progress.** tqdm bar shows completion. Watch for high `failed/blocked` counts — if >20%, reduce workers and add delay.
-6. **Report.** Show summary: total products, coverage %, cheapest competitor, average delta %.
-7. **Vault.** Dispatch vault-scribe with run metadata.
+1. **Confirm params.** Verify: webshop URL (optional), sheet ID, country code.
+2. **Discovery (if --webshop provided).** Run with `--dry-run --limit 10` first. Confirm product count is reasonable before full run.
+3. **Run pipeline.** Start with `--workers 5` for first run to check ban risk. Scale to `--workers 10` if no blocked jobs after first 50 products.
+4. **Monitor progress.** tqdm bar shows completion. Watch for high `failed/blocked` counts — if >20%, reduce workers and add delay.
+5. **Report.** Show summary: total products, coverage %, cheapest competitor, average delta %.
 
 ## Common Commands
 
 ```bash
 # Discover products from webshop + compare against all competitors
-python3 tools/price-scraper/price_scraper.py \
+python3 price_scraper.py \
   --webshop https://www.example.com \
   --sheet <SHEET_ID> --country HU --workers 5
 
 # Resume after interruption (every run is resumable by default)
-python3 tools/price-scraper/price_scraper.py \
+python3 price_scraper.py \
   --sheet <SHEET_ID> --country HU --workers 10
 
 # Dry run — test discovery without any writes
-python3 tools/price-scraper/price_scraper.py \
+python3 price_scraper.py \
   --webshop https://www.example.com --sheet <SHEET_ID> \
   --country HU --dry-run --limit 10
 
 # Force full re-scrape (ignore freshness window)
-python3 tools/price-scraper/price_scraper.py \
+python3 price_scraper.py \
   --sheet <SHEET_ID> --country HU --force-refresh
 
 # Install dependencies (first run only)
-pip install -r tools/price-scraper/requirements.txt
+pip install -r requirements.txt
 ```
 
 ## Constraints
 
-- ár.hu: 2s delay between requests (configurable in `config/sites.json`)
+- arukereso.hu: 2.5s delay between requests (configurable in `config/sites.json`)
 - Google Shopping: requires agent-browser (Playwright); skip gracefully if unavailable
-- Firecrawl: 500 pages/month free tier — reserve for direct fallback only
-- Google Sheets API: batch writes every 50 completions to avoid rate limits
 - SQLite: WAL mode + single writer thread — never write from worker threads directly
-
-## Vault Integration (mandatory)
-
-**Before run:** Check vault for previous scrapes of this webshop domain.
-
-**After run:** Dispatch vault-scribe with:
-- Run metadata → `Agent-Brain/Memory/Research/price-scraper-<domain>-<date>.md`
-- New failure modes (e.g. site blocking, JSON-LD missing) → `Agent-Brain/Memory/Failure-Modes/`
+- Rate limiting: thread-safe, per-domain — see `scrapers/utils.py` RateLimiter
 
 ## Output Contract
 
-Output summary must include these fields (validated by SubagentStop hook):
+Output summary must include these fields (validated by output-contract.json):
 - `total_products` — total EANs processed
 - `products_with_results` — EANs with at least 1 competitor found
 - `coverage_percent` — products_with_results / total_products * 100
@@ -85,4 +74,4 @@ Output summary must include these fields (validated by SubagentStop hook):
 - `country` — country code used
 - `scraped_at` — ISO timestamp
 
-See `data/contracts/price-scraper.json` for full schema.
+See `agent/output-contract.json` for full schema.
