@@ -1,0 +1,79 @@
+{
+  "HU": {
+    "aggregators": ["arukereso", "google_shopping"],
+    "aggregator_notes": {
+      "arukereso": "Uses arukereso.hu (NOT ar.hu — that domain is defunct). Searches by product_name, not EAN. Covers 400+ HU webshops including winterthurmedical.com, plazapatika.hu, orvosieszkoz.hu, doktorpatika.hu."
+    },
+    "competitors": [
+      "winterthurmedical.com",
+      "plazapatika.hu",
+      "orvosieszkoz.hu",
+      "medistore.hu",
+      "orvos-medtech.hu",
+      "doktorshop.hu",
+      "orvosikeszulek.hu",
+      "medicalcenter.hu",
+      "meddoc.hu"
+    ],
+    "currency": "HUF",
+    "country_code": "HU",
+    "language": "hu",
+    "rate_limit_seconds": 2,
+    "crawl_rate_limit": 2,
+    "aggregator_rate_limit": 2.5
+  },
+  "DE": {
+    "aggregators": ["idealo", "google_shopping"],
+    "idealo_tld": "de",
+    "competitors": [],
+    "currency": "EUR",
+    "country_code": "DE",
+    "language": "de",
+    "rate_limit_seconds": 2,
+    "crawl_rate_limit": 1.5,
+    "aggregator_rate_limit": 2
+  },
+  "AT": {
+    "aggregators": ["idealo", "google_shopping"],
+    "idealo_tld": "at",
+    "competitors": [],
+    "currency": "EUR",
+    "country_code": "AT",
+    "language": "de",
+    "rate_limit_seconds": 2,
+    "crawl_rate_limit": 1.5,
+    "aggregator_rate_limit": 2
+  },
+  "GB": {
+    "aggregators": ["google_shopping"],
+    "competitors": [],
+    "currency": "GBP",
+    "country_code": "GB",
+    "language": "en",
+    "rate_limit_seconds": 2,
+    "crawl_rate_limit": 1.5,
+    "aggregator_rate_limit": 2
+  },
+  "FR": {
+    "aggregators": ["idealo", "google_shopping"],
+    "idealo_tld": "fr",
+    "competitors": [],
+    "currency": "EUR",
+    "country_code": "FR",
+    "language": "fr",
+    "rate_limit_seconds": 2,
+    "crawl_rate_limit": 1.5,
+    "aggregator_rate_limit": 2
+  },
+  "PL": {
+    "aggregators": ["idealo", "google_shopping"],
+    "idealo_tld": "pl",
+    "competitors": [],
+    "currency": "PLN",
+    "country_code": "PL",
+    "language": "pl",
+    "rate_limit_seconds": 2,
+    "crawl_rate_limit": 1.5,
+    "aggregator_rate_limit": 2
+  }
+}
