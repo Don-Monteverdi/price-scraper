@@ -1,0 +1,40 @@
+{
+  "contract": "price-scraper",
+  "version": "1.0",
+  "description": "Output contract for the price-scraper agent. Validated by SubagentStop hook.",
+  "required_fields": [
+    "total_products",
+    "products_with_results",
+    "coverage_percent",
+    "sheet_id",
+    "country",
+    "scraped_at"
+  ],
+  "sheet_tabs": ["Products", "All Prices"],
+  "products_tab_columns": [
+    "EAN",
+    "Product Name",
+    "Client Price",
+    "Client Currency",
+    "Client URL",
+    "Cheapest Price",
+    "Cheapest Store",
+    "Delta %",
+    "# Stores Found",
+    "Last Scraped"
+  ],
+  "all_prices_tab_columns": [
+    "EAN",
+    "Product Name",
+    "Store Name",
+    "Store URL",
+    "Product Page URL",
+    "Price",
+    "Currency",
+    "Scraped At"
+  ],
+  "delta_percent_convention": "positive = client overpriced vs cheapest competitor; negative = client underpriced",
+  "delta_percent_formula": "(client_price - cheapest_price) / cheapest_price * 100",
+  "cross_currency_delta": "shown as dash (—) when client currency != competitor currency",
+  "match_reliable_flag": "Delta% shows 'Összehasonlítás megbízhatatlan (eltérő termék)' when product name similarity score is below 0.45 — indicates the compared price may be for a different product"
+}

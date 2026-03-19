@@ -18,6 +18,11 @@ python3 price_scraper.py --webshop https://www.example.com --sheet SHEET_ID --co
 ## Architecture
 
 ```
+agent/
+├── agent.md                    Claude Code agent definition
+├── skill.md                    Claude Code skill (7-step workflow)
+└── output-contract.json        Output validation schema
+
 price_scraper.py                CLI entrypoint + orchestration
 ├── scrapers/
 │   ├── utils.py                Shared: price parser, rate limiter, dedup, similarity
@@ -314,6 +319,59 @@ These demonstrate name-based search when products lack standard EANs.
 | `tqdm` | >= 4.66.0 | Progress bars |
 
 **Optional:** [agent-browser](https://github.com/nicholasoxford/agent-browser) for Google Shopping (Playwright-based headless browser).
+
+## Claude Code Agent Integration
+
+This repo includes a full Claude Code agent + skill for hands-free operation. The agent orchestrates the CLI pipeline, handles Google Sheet I/O via MCP tools, and validates output against a contract.
+
+### Files
+
+| File | Purpose |
+|------|---------|
+| `agent/agent.md` | Agent definition — triggers on "scrape prices", "price comparison", etc. |
+| `agent/skill.md` | 7-step skill workflow: vault check → params → dry run → full run → monitor → report → vault |
+| `agent/output-contract.json` | Output schema validated by SubagentStop hook |
+| `docs/design-spec.md` | Original approved design spec |
+
+### How the Agent Works
+
+```
+User: "Compare prices for example.com against all HU competitors"
+  │
+  ├── Skill activates (price-scraper skill)
+  │     ├── Step 1: Vault check for cached results
+  │     ├── Step 2: Gather params (webshop URL, sheet ID, country)
+  │     └── Step 3: Dispatch price-scraper agent
+  │
+  └── Agent executes (price-scraper agent)
+        ├── Dry run first (--dry-run --limit 10)
+        ├── Full pipeline (--workers 5, scale to 10)
+        ├── Read output/products.json → write to Google Sheet via MCP
+        ├── Report summary to user
+        └── Dispatch vault-scribe with run metadata
+```
+
+### Using with Claude Code
+
+1. Copy `agent/agent.md` to `.claude/agents/price-scraper.md`
+2. Copy `agent/skill.md` to `.claude/skills/price-scraper/SKILL.md`
+3. Copy `agent/output-contract.json` to `data/contracts/price-scraper.json`
+4. The agent triggers automatically when users mention price comparison
+
+### Output Contract
+
+The agent's output is validated against `output-contract.json`. Required fields:
+
+```json
+{
+  "total_products": 500,
+  "products_with_results": 423,
+  "coverage_percent": 84.6,
+  "sheet_id": "1ABC...",
+  "country": "HU",
+  "scraped_at": "2026-03-19T14:30:00"
+}
+```
 
 ## License
 
